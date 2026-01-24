@@ -1,0 +1,7 @@
+*.md
+.claude/
+processed_data/
+__pycache__/
+.DS_Store
+*.pkl
+*.json
