@@ -1,0 +1,18 @@
+experiment_name: "bigram_laplace"
+model_type: "ngram"
+
+# N-gram specific
+n: 2
+smoothing: "laplace"
+alpha: 1.0
+
+# Data
+data_dir: "processed_data"
+
+# Output
+output_dir: "experiments/results"
+checkpoint_dir: "experiments/checkpoints"
+
+# Evaluation
+max_eval_samples: 10000
+top_k: 10
