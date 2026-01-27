@@ -1,0 +1,18 @@
+experiment_name: "trigram_interpolation"
+model_type: "ngram"
+
+# N-gram specific
+n: 3
+smoothing: "interpolation"
+alpha: 0.4
+
+# Data
+data_dir: "processed_data"
+
+# Output
+output_dir: "experiments/results"
+checkpoint_dir: "experiments/checkpoints"
+
+# Evaluation
+max_eval_samples: 10000
+top_k: 10

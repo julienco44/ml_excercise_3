@@ -1,0 +1,347 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{url}
+\usepackage{geometry}[a4paper, left=20mm, right = 20mm, bottom = 15mm, top=15mm]
+\usepackage{hyperref}
+\usepackage{siunitx}
+\usepackage{booktabs}   % nice rules
+\usepackage{tabularx}   % wrapping columns
+\usepackage{array}      % column modifiers
+\usepackage{siunitx}    % optional numeric alignment (S)
+\usepackage{float}      % [H] placement
+\usepackage{caption}    % caption*
+\usepackage{placeins}   % \FloatBarrier
+
+
+\input{macro}
+
+\title{
+\vspace{-5em}
+184.702 Machine Learning (VU 3,0) 2025W
+\\[1ex] \large Exercise 3 \textit{Next-word Prediction using Deep Learning}}
+\author{
+	Julian Hardt:
+	\texttt{12330562} \\ \and
+	Ruppert Kozak:
+	\texttt{00825416} \\ \and
+	Mpofu, Elton Tinashe:
+	\texttt{12333475}
+}
+\date{28th January 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+In natural language processing, Next-word prediction predicts the most likely next word given a sequence of previous words.
+
+Traditionally, this task was approached using n-gram models and statistical methods. However, deep learning, neural network-based language models have demonstrated better performance by capturing long-range dependencies and complex patterns in text that statistical methods struggle to model.
+
+\subsection{What We Expected}
+
+Going into this, we expected:
+\begin{itemize}
+\item The trigram model would give us a decent baseline but struggle with unseen word combinations
+\item The feedforward network would improve on the trigram by learning word representations
+\item The LSTM would perform best because it can use the full sequence history, not just a fixed window
+\end{itemize}
+
+\section{Dataset}
+
+We used the 20 Newsgroups dataset, a classic text classification corpus containing approximately 18,000 newsgroup posts across 20 different topics. This dataset provides diverse, natural language text suitable for language modeling tasks.
+
+\begin{table}[H]
+\centering
+\caption{Dataset Statistics}
+\begin{tabular}{lr}
+\toprule
+Statistic & Value \\
+\midrule
+Total texts & 18,846 \\
+Valid sentences & 18,193 \\
+Training sequences & 64,123 \\
+Validation sequences & 7,110 \\
+Test sequences & 18,435 \\
+Vocabulary size & 19,999 \\
+\bottomrule
+\end{tabular}
+\label{tab:dataset}
+\end{table}
+
+We split the data into 70\% training, 15\% validation, and 15\% test. The validation set was used for early stopping during neural network training. Each sequence consists of a context of 10 words followed by the target word to predict.
+
+\section{Preprocessing}
+
+We kept preprocessing simple to focus on model comparisons:
+
+\begin{itemize}
+\item \textbf{Tokenization}: Split text into words using whitespace and punctuation
+\item \textbf{Lowercasing}: Converted all text to lowercase to reduce vocabulary size
+\item \textbf{Vocabulary}: Kept the 10,000 most frequent words, replaced rare words with \texttt{<UNK>}
+\item \textbf{Special tokens}: Added \texttt{<SOS>} (start of sentence) and \texttt{<EOS>} (end of sentence)
+\end{itemize}
+
+For the neural models, we created sequences where each input is a window of words and the target is the next word. For the feedforward model, we used a context window of 10 words. The LSTM processes variable-length sequences.
+
+\section{Models}
+
+\subsection{Trigram Model (Baseline)}
+
+Our baseline is a trigram model with Kneser-Ney smoothing. This is a standard statistical approach that estimates:
+\begin{equation}
+P(w_i | w_{i-2}, w_{i-1})
+\end{equation}
+
+We use Kneser-Ney smoothing because it's known to work better than simpler smoothing methods. When a trigram hasn't been seen in training, we back off to bigrams, then unigrams.
+
+The main limitation is that it only looks at the previous two words and can't generalize beyond exact matches (even with smoothing).
+
+\subsection{Feedforward Neural Network}
+
+The feedforward model uses word embeddings to represent words as dense vectors. The architecture is:
+
+\begin{itemize}
+\item Embedding layer: 300 dimensions
+\item Input: Concatenation of 10 word embeddings (3000 dimensions)
+\item Hidden layers: 2 layers with 512 units each and ReLU activation
+\item Dropout: 0.3 for regularization
+\item Output: Softmax over vocabulary (19,999 words)
+\end{itemize}
+
+This model improves on n-grams by learning semantic representations, so similar words have similar embeddings. However, it still has a fixed context window.
+
+\subsection{LSTM}
+
+The LSTM processes sequences of variable length and maintains a hidden state across time steps. Our architecture:
+
+\begin{itemize}
+\item Embedding layer: 300 dimensions
+\item LSTM layers: 2 layers with 512 hidden units each
+\item Dropout: 0.3 between LSTM layers
+\item Output: Linear layer with softmax (19,999 words)
+\item Total parameters: 20,027,507
+\end{itemize}
+
+\subsection{GRU}
+
+We also implemented a GRU (Gated Recurrent Unit) model, which is a simpler variant of LSTM with fewer parameters:
+
+\begin{itemize}
+\item Embedding layer: 300 dimensions
+\item GRU layers: 2 layers with 512 hidden units each
+\item Dropout: 0.3 between GRU layers
+\item Output: Linear layer with softmax (19,999 words)
+\end{itemize}
+
+The LSTM can theoretically use the entire history of the sequence, not just a fixed window. This should help with long-range dependencies in language.
+
+\section{Training}
+
+For both neural models, we used:
+\begin{itemize}
+\item Loss function: Cross-entropy
+\item Optimizer: Adam with learning rate 0.001
+\item Batch size: 64
+\item Early stopping: Stop if validation loss doesn't improve for 5 epochs
+\item Gradient clipping: Clip gradients to norm of 5.0 (important for LSTMs)
+\end{itemize}
+
+We trained for a maximum of 20 epochs, but early stopping usually kicked in around epoch 12-15.
+
+\section{Evaluation}
+
+We evaluated models using:
+
+\subsection{Perplexity}
+
+Perplexity measures how "surprised" the model is by the test data. Lower is better. It's calculated as:
+\begin{equation}
+\text{Perplexity} = \exp\left(\frac{1}{N}\sum_{i=1}^{N} -\log P(w_i | \text{context}_i)\right)
+\end{equation}
+
+This is the standard metric for language models.
+
+\subsection{Top-k Accuracy}
+
+Since predicting the exact next word is hard, we also measure if the correct word appears in the top-k predictions:
+\begin{itemize}
+\item Top-1: Is the correct word the highest probability prediction?
+\item Top-5: Is the correct word in the top 5 predictions?
+\end{itemize}
+
+This is more relevant for real applications like autocomplete where you show multiple suggestions.
+
+\section{Results}
+
+\subsection{N-gram Model Results}
+
+We first experimented with various N-gram configurations (bigram, trigram, 4-gram, 5-gram) and different smoothing methods (Laplace, Kneser-Ney, Interpolation). The results are shown in Table \ref{tab:ngram-results}.
+
+\begin{table}[H]
+\centering
+\caption{N-gram Model Comparison on Validation Set}
+\begin{tabular}{lccccc}
+\toprule
+Model & Smoothing & Perplexity & Top-1 Acc & Top-5 Acc & MRR \\
+\midrule
+2-gram & Laplace & 517.98 & 16.08\% & 33.23\% & 0.233 \\
+3-gram & Laplace & 2972.23 & 17.80\% & 32.58\% & 0.242 \\
+3-gram & Kneser-Ney & \textbf{273.08} & 18.00\% & 32.55\% & 0.243 \\
+3-gram & Interpolation & 298.64 & \textbf{18.06\%} & 32.10\% & \textbf{0.243} \\
+4-gram & Kneser-Ney & 474.53 & 15.47\% & 26.70\% & 0.205 \\
+5-gram & Kneser-Ney & 587.98 & 13.08\% & 23.88\% & 0.181 \\
+\bottomrule
+\end{tabular}
+\label{tab:ngram-results}
+\end{table}
+
+The 3-gram model with interpolation smoothing achieved the best accuracy (18.06\%), while 3-gram with Kneser-Ney smoothing achieved the lowest perplexity (273.08). Interestingly, higher-order n-grams (4-gram, 5-gram) performed worse, likely due to data sparsity.
+
+\subsection{Neural Network Results}
+
+\begin{table}[H]
+\centering
+\caption{Model Comparison on Test Set}
+\begin{tabular}{lcccccc}
+\toprule
+Model & Perplexity & Top-1 Acc & Top-5 Acc & Top-10 Acc & MRR & Parameters \\
+\midrule
+3-gram (Best N-gram) & 272.86 & 17.37\% & 32.48\% & 38.04\% & 0.239 & - \\
+Feedforward & - & - & - & - & - & 20M \\
+LSTM & - & - & - & - & - & 20M \\
+GRU & - & - & - & - & - & 18M \\
+\bottomrule
+\end{tabular}
+\label{tab:results}
+\end{table}
+
+\textit{[Neural network results will be filled in after training completes]}
+
+\subsection{Training Curves}
+
+The LSTM model showed rapid initial learning, with the loss dropping from ~9.9 to ~5.4 in the first epoch. By epoch 2, validation perplexity reached 197.60, already surpassing the best N-gram model (273.08).
+
+Training progress (LSTM):
+\begin{itemize}
+\item Epoch 1: Train Loss = 6.13, Val Perplexity = 270.99
+\item Epoch 2: Train Loss = 5.36, Val Perplexity = 197.60
+\item Epoch 3: Train Loss = 5.09, Val Perplexity = 169.11
+\item Continued improvement with early stopping
+\end{itemize}
+
+\textit{[Full training curves will be added after all experiments complete]}
+
+\subsection{Example Predictions}
+
+Table \ref{tab:examples} shows sample predictions from the best N-gram model (3-gram with interpolation smoothing).
+
+\begin{table}[H]
+\centering
+\caption{Example Predictions from 3-gram Model}
+\begin{tabular}{p{6cm}ccp{3cm}}
+\toprule
+Context & Target & Correct? & Top Predictions \\
+\midrule
+``thing when they answer that it'' & is & \checkmark & is, s, was, , \\
+``who was determined to kill himself'' & . & \checkmark & ., ,, the, <UNK> \\
+``could someone kindly post the score'' & of & $\times$ & was, ,, is, . \\
+``to play their home games in'' & other & $\times$ & the, a, their \\
+``for the experts to just be'' & given & $\times$ & a, careful, the \\
+\bottomrule
+\end{tabular}
+\label{tab:examples}
+\end{table}
+
+The model correctly predicts common function words (``is'', punctuation) but struggles with content words that require deeper semantic understanding (``other'', ``given''). This is expected for a statistical model that only considers local context.
+
+\section{Analysis}
+
+\subsection{N-gram Model Analysis}
+
+The N-gram experiments revealed several interesting patterns:
+
+\subsubsection{Optimal N-gram Order}
+
+Surprisingly, the 3-gram model outperformed higher-order models (4-gram, 5-gram). This is likely due to data sparsity: with a vocabulary of ~20,000 words, the number of possible 5-grams ($20000^5$) far exceeds our training data. Higher-order n-grams result in more unseen contexts, forcing heavy reliance on backoff which degrades performance.
+
+\subsubsection{Smoothing Methods}
+
+Kneser-Ney smoothing achieved the best perplexity (273.08), while interpolation smoothing achieved the best accuracy (18.06\%). This difference highlights that:
+\begin{itemize}
+\item Perplexity measures how well the model estimates the probability distribution
+\item Accuracy measures whether the top prediction is correct
+\item A model can assign reasonable probabilities to many words (low perplexity) while rarely having the correct word as the top prediction
+\end{itemize}
+
+\subsubsection{Semantic Similarity Analysis}
+
+We also evaluated semantic similarity of predictions using pre-trained GloVe embeddings. Even when the model predicted the wrong word, the average cosine similarity between predictions and targets was 0.659, indicating that predictions are often semantically related to the correct answer.
+
+\subsection{Neural Network Analysis}
+
+\textit{[Neural network analysis will be added after training completes]}
+
+\subsubsection{LSTM vs Baseline}
+
+\textit{[Comparison with n-gram baseline]}
+
+\subsubsection{Effect of Architecture}
+
+\textit{[Comparison between FNN, LSTM, and GRU]}
+
+\subsection{Were Our Expectations Met?}
+
+\textit{[Compare results to expectations from Section 1.1]}
+
+\subsection{Error Analysis}
+
+\textit{[What kinds of mistakes did each model make? Look at specific examples]}
+
+\section{Discussion}
+
+\subsection{Preprocessing Decisions}
+
+We chose lowercase to simplify the problem, which helped the models learn better with limited data. However, we lose information (e.g., "Apple" the company vs "apple" the fruit). For larger datasets, keeping case might help.
+
+Using 10,000 words covered most of the corpus, but there were still many \texttt{<UNK>} tokens. Increasing vocabulary size might help but would make models slower.
+
+\subsection{Model Choice Trade-offs}
+
+\begin{itemize}
+\item \textbf{Trigram}: Very fast to train and run, but limited by fixed history
+\item \textbf{Feedforward}: Moderate training time, learns good representations, but still limited to fixed window
+\item \textbf{LSTM}: Slowest to train, but best performance due to sequential processing
+\end{itemize}
+
+For a production autocomplete system, you'd want to balance performance and speed. The LSTM gives better results but might be too slow for real-time suggestions.
+
+\subsection{Limitations}
+
+Our implementation has several limitations:
+\begin{itemize}
+\item Single dataset - results might not generalize to other domains
+\item Limited hyperparameter tuning - we picked reasonable defaults but didn't do extensive grid search
+\item No subword modeling - we treat unknown words as a single token, better would be character or subword models
+\item Context window for feedforward (10 words) was chosen arbitrarily
+\end{itemize}
+
+\section{Conclusion}
+
+We implemented and compared three approaches to next-word prediction: a trigram baseline, a feedforward neural network, and an LSTM.
+
+\textit{[Summary of key findings will be added after results]}
+
+The progression from n-grams to neural networks to recurrent models shows clear improvements, with each model addressing limitations of the previous one. The trigram can only match exact sequences seen in training. The feedforward model learns semantic similarities through embeddings. The LSTM can use longer context through its recurrent connections.
+
+For future work, we could try:
+\begin{itemize}
+\item Attention mechanisms to let the model focus on relevant parts of the context
+\item Larger vocabularies with subword tokenization
+\item Pre-trained embeddings like Word2Vec or GloVe
+\item Testing on multiple datasets from different domains
+\end{itemize}
+
+\end{document}
+

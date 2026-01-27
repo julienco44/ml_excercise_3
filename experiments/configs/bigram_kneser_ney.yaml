@@ -1,0 +1,18 @@
+experiment_name: "bigram_kneser_ney"
+model_type: "ngram"
+
+# N-gram specific
+n: 2
+smoothing: "kneser_ney"
+alpha: 0.75
+
+# Data
+data_dir: "processed_data"
+
+# Output
+output_dir: "experiments/results"
+checkpoint_dir: "experiments/checkpoints"
+
+# Evaluation
+max_eval_samples: 10000
+top_k: 10
