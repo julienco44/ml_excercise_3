@@ -44,7 +44,7 @@ class Lemmatizer:
             return text.split() if text else []
 
         doc = self.nlp(text)
-        return [token.lemma_.lower() for token in doc if token.is_alpha]
+        return [token.lemma_.lower() for token in doc if not token.is_space]
 
     def lemmatize_batch(self, texts: List[str], batch_size: int = 1000) -> List[List[str]]:
         if not self.nlp:
@@ -56,7 +56,8 @@ class Lemmatizer:
             batch = texts[i:i + batch_size]
             docs = self.nlp.pipe(batch)
             for doc in docs:
-                lemmas = [token.lemma_.lower() for token in doc if token.is_alpha]
+                # Keep everything involved except whitespace
+                lemmas = [token.lemma_.lower() for token in doc if not token.is_space]
                 results.append(lemmas)
 
             if (i + batch_size) % 10000 == 0:

@@ -60,6 +60,9 @@ class PreprocessingPipeline:
         if self.use_lemmatization and self.lemmatizer and self.lemmatizer.is_available():
             print("\nStep 2: Lemmatizing texts...")
             sentences = self.lemmatizer.lemmatize_batch(cleaned_texts, batch_size=config.BATCH_SIZE)
+            # Add EOS to lemmatized sentences
+            for s in sentences:
+                s.append("<EOS>")
         else:
             print("\nStep 2: Tokenizing texts...")
             sentences = []

@@ -1,0 +1,20 @@
+Hello world! This is a test.
+Does it keep punctuation? Yes, it should.
+This is another sentence to add volume.
+We need more data for the split.
+Line number five is here.
+Line number six is also here.
+Line number seven is doing well.
+Line number eight is fantastic.
+Line number nine is almost there.
+Line number ten is halfway.
+Line number eleven is a prime number.
+Line number twelve is a dozen.
+Line number thirteen is lucky for some.
+Line number fourteen is two weeks.
+Line number fifteen is a quarter hour.
+Line number sixteen is sweet.
+Line number seventeen is dancing queen.
+Line number eighteen is voting age.
+Line number nineteen is last teen.
+Line number twenty is plenty.
