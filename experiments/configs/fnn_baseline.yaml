@@ -1,0 +1,27 @@
+experiment_name: "fnn_baseline"
+model_type: "fnn"
+
+# Model hyperparameters
+embedding_dim: 300
+hidden_size: 512
+context_size: 10
+num_layers: 2
+dropout: 0.3
+
+# Training hyperparameters
+batch_size: 64
+learning_rate: 0.001
+num_epochs: 20
+grad_clip: 5.0
+early_stopping_patience: 5
+
+# Data
+data_dir: "processed_data"
+
+# Output
+output_dir: "experiments/results"
+checkpoint_dir: "experiments/checkpoints"
+
+# Evaluation
+max_eval_samples: 10000
+top_k: 10
