@@ -4,3 +4,14 @@ __pycache__/
 .DS_Store
 *.pkl
 *.json
+
+# Large assets (download locally)
+embeddings/
+*.pt
+*.pth
+*.ckpt
+experiments/checkpoints/
+
+# Python cache
+__pycache__/
+*.pyc
