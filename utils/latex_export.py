@@ -278,15 +278,25 @@ def generate_example_predictions_table(examples: List[Dict],
         target = ex.get('target', '').replace('_', '\\_')
         is_correct = ex.get('is_correct', False)
 
-        # Get predictions
+                # Get predictions (keep word + probability)
         if 'predictions' in ex and isinstance(ex['predictions'], list):
-            preds = [p[0] if isinstance(p, tuple) else p for p in ex['predictions'][:3]]
+            preds = ex['predictions'][:3]   # [['word', prob], ...]
         elif 'top_5' in ex:
-            preds = ex['top_5'].split(', ')[:3]
+            preds = [(p, None) for p in ex['top_5'].split(', ')[:3]]
         else:
-            preds = [ex.get('prediction', '')]
+            preds = [(ex.get('prediction', ''), None)]
 
-        pred_str = ', '.join(preds).replace('_', '\\_')
+        def format_pred(p):
+            # p = ['word', probability] or (word, None)
+            if isinstance(p, (list, tuple)) and len(p) == 2:
+                word, prob = p
+                if prob is not None:
+                    return f"{word} ({prob:.3f})"
+                return str(word)
+            return str(p)
+
+        pred_str = ', '.join(format_pred(p) for p in preds).replace('_', '\\_')
+
 
         correct_mark = "$\\checkmark$" if is_correct else "$\\times$"
 

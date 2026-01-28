@@ -21,28 +21,41 @@ from evaluation.semantic_similarity import SemanticEvaluator
 
 
 def load_model(path: str):
-    """Load model from checkpoint."""
     import torch
+    from models import FeedforwardLM, LSTMModel, GRUModel, RNNModel, NgramModel
 
-    # Determine model type from checkpoint
-    if path.endswith('.pkl'):
-        # N-gram model
+    # N-gram models
+    if path.endswith(".pkl"):
         return NgramModel.load(path)
-    else:
-        # Neural model - peek at checkpoint to determine type
-        checkpoint = torch.load(path, map_location='cpu')
 
-        model_type = checkpoint.get('model_type', 'lstm').lower()
+    checkpoint = torch.load(path, map_location="cpu")
 
-        if model_type == 'lstm':
-            return LSTMModel.load(path)
-        elif model_type == 'gru':
-            return GRUModel.load(path)
-        elif model_type == 'rnn':
-            return RNNModel.load(path)
-        else:
-            # Default to LSTM for backwards compatibility
-            return LSTMModel.load(path)
+    # Prefer filename-based detection (robust)
+    filename = os.path.basename(path).lower()
+
+    if "fnn" in filename:
+        return FeedforwardLM.load(path)
+    elif "lstm" in filename:
+        return LSTMModel.load(path)
+    elif "gru" in filename:
+        return GRUModel.load(path)
+    elif "rnn" in filename:
+        return RNNModel.load(path)
+
+    # Fallback: try model_type inside checkpoint
+    model_type = checkpoint.get("model_type", "").lower()
+
+    if model_type == "fnn":
+        return FeedforwardLM.load(path)
+    elif model_type == "lstm":
+        return LSTMModel.load(path)
+    elif model_type == "gru":
+        return GRUModel.load(path)
+    elif model_type == "rnn":
+        return RNNModel.load(path)
+
+    raise ValueError(f"Unknown model type for checkpoint: {path}")
+
 
 
 def evaluate_single_model(model_path: str, test_data: List[List[int]], vocab,
